@@ -329,9 +329,14 @@ var QUnit = {
 	 * @param Object actual
 	 * @param Object expected
 	 * @param String message (optional)
+	 * @param Number delta (optional; use only when comparing numbers)
 	 */
-	equal: function(actual, expected, message) {
-		QUnit.push(expected == actual, actual, expected, message);
+	equal: function(actual, expected, message, delta) {		
+		if (delta) {
+			QUnit.push(Math.abs(actual - expected) <= delta, actual, expected, message, delta);
+		} else {
+			QUnit.push(expected == actual, actual, expected, message);
+		}
 	},
 
 	notEqual: function(actual, expected, message) {
@@ -614,12 +619,13 @@ extend(QUnit, {
 		return undefined;
 	},
 
-	push: function(result, actual, expected, message) {
+	push: function(result, actual, expected, message, delta) {
 		var details = {
 			result: result,
 			message: message,
 			actual: actual,
-			expected: expected
+			expected: expected,
+			delta: delta
 		};
 
 		message = escapeHtml(message) || (result ? "okay" : "failed");
@@ -628,8 +634,14 @@ extend(QUnit, {
 		actual = escapeHtml(QUnit.jsDump.parse(actual));
 		var output = message + '<table><tr class="test-expected"><th>Expected: </th><td><pre>' + expected + '</pre></td></tr>';
 		if (actual != expected) {
+			var deltaMsg = '';
+			if (delta && result) {
+				deltaMsg = '(difference less than delta of ' + delta + ')';
+			} else if (delta) {
+				deltaMsg = '(difference greater than acceptable delta of ' + delta + ')';
+			}
 			output += '<tr class="test-actual"><th>Result: </th><td><pre>' + actual + '</pre></td></tr>';
-			output += '<tr class="test-diff"><th>Diff: </th><td><pre>' + QUnit.diff(expected, actual) +'</pre></td></tr>';
+			output += '<tr class="test-diff"><th>Diff: </th><td><pre>' + QUnit.diff(expected, actual) +'</pre>' + deltaMsg + '</td></tr>';
 		}
 		if (!result) {
 			var source = sourceFromStacktrace();
